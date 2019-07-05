@@ -31,7 +31,6 @@ from official.datasets import movielens
 from official.recommendation import constants as rconst
 from official.recommendation import data_preprocessing
 from official.recommendation import popen_helper
-from official.utils.misc import keras_utils
 
 
 DATASET = "ml-test"
@@ -51,16 +50,12 @@ FRESH_RANDOMNESS_MD5 = "63d0dff73c0e5f1048fbdc8c65021e22"
 def mock_download(*args, **kwargs):
   return
 
-
 # The forkpool used by data producers interacts badly with the threading
 # used by TestCase. Without this patch tests will hang, and no amount
 # of diligent closing and joining within the producer will prevent it.
 @mock.patch.object(popen_helper, "get_forkpool", popen_helper.get_fauxpool)
 class BaseTest(tf.test.TestCase):
-
   def setUp(self):
-    if keras_utils.is_v2_0:
-      tf.compat.v1.disable_eager_execution()
     self.temp_data_dir = self.get_temp_dir()
     ratings_folder = os.path.join(self.temp_data_dir, DATASET)
     tf.io.gfile.makedirs(ratings_folder)
@@ -124,7 +119,7 @@ class BaseTest(tf.test.TestCase):
 
   def drain_dataset(self, dataset, g):
     # type: (tf.data.Dataset, tf.Graph) -> list
-    with self.session(graph=g) as sess:
+    with self.test_session(graph=g) as sess:
       with g.as_default():
         batch = dataset.make_one_shot_iterator().get_next()
       output = []
